@@ -1,0 +1,39 @@
+function run_setup() {
+verify_license # <-- VERIFY LICENSE HERE
+export DEBIAN_FRONTEND=noninteractive
+dpkg --configure -a || true
+apt -f install -y || true
+apt update
+apt install -y sudo screen ufw ruby rubygems figlet lolcat curl wget python3-pip jq curl sudo zip figlet lolcat vnstat cron
+gem install lolcat || true
+systemctl enable cron >/dev/null 2>&1 || true
+systemctl start cron >/dev/null 2>&1 || true
+echo "✅ Cron service ready."
+sudo iptables -t nat -D PREROUTING -i eth0 -p udp --dport 1:21 -j DNAT --to-destination :36712
+sudo iptables -t nat -D PREROUTING -i eth0 -p udp --dport 23:52 -j DNAT --to-destination :36712
+sudo iptables -t nat -I PREROUTING 1 -i eth0 -p udp --dport 6000:19999 -j DNAT --to-destination :5667
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
+sudo apt install iptables-persistent -y
+apt install -y iptables-persistent netfilter-persistent
+sudo netfilter-persistent save
+echo "1. Update OS dan install dependensi..."
+apt upgrade -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
+apt install -y wget curl ca-certificates
+update-ca-certificates
+echo "2. Hentikan service lama (jika ada)..."
+systemctl stop zivpn 2>/dev/null
+echo "3. Hapus binary lama (jika ada)..."
+rm -f /usr/local/bin/zivpn
+# downlod script UDP ZIVPN
+echo "4. Download skrip resmi ZiVPN..."
+wget -O /root/zi.sh https://raw.githubusercontent.com/yyya/error404/main/udpzivpn/zi.sh
+echo "5. Beri izin executable..."
+chmod +x /root/zi.sh
+echo "6. Jalankan skrip instalasi ZiVPN..."
+sudo /root/zi.sh
+echo "7. Reload systemd dan start service..."
+systemctl daemon-reload
+systemctl start zivpn
+systemctl enable zivpn
+}

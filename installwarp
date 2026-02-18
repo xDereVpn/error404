@@ -1,0 +1,8 @@
+sudo bash warp+ install
+sudo bash warp+ register
+
+sudo bash warp+ license YOUR_WARP_PLUS_KEY
+sudo bash warp+ generate
+sudo bash warp+ mode full     # opsi lain: ipv4 | split
+sudo bash warp+ up
+sudo bash warp+ enable        # auto-start saat boot
