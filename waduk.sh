@@ -1145,174 +1145,6 @@ RESTART_SERVICE() {
     print_success "All services restarted & enabled"
 }
 
-UDP_ZIVPN() {
-mkdir -p /usr/local
-
-    # Buat API key acak 6 karakter alfanumerik
-    local api_key
-    api_key=$(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 6)
-
-    # Simpan API key ke file
-    local key_file="/etc/zivpn/api_auth.key"
-    echo "$api_key" > "$key_file"
-    chmod 600 "$key_file"  # Batasi akses file
-       
-set -euo pipefail
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-LIGHT_BLUE='\033[1;36m'  # biru muda terang
-BOLD_WHITE='\033[1;37m'
-CYAN='\033[96;1m'
-GREEN='\033[0;32m'
-LIGHT_GREEN='\033[1;32m'
-NC='\033[0m' # No Color
-
-# LICENSE IP
-LICENSE_URL="https://raw.githubusercontent.com/xDereVpn/permission/main/regist"
-LICENSE_INFO_FILE="/etc/zivpn/.license_info"
-
-# Link Downlod Bin amd64
-BIN_URL="https://github.com/arivpnstores/udp-zivpn/releases/download/zahidbd2/udp-zivpn-linux-amd64"
-
-# Link Download config.json
-CFG_URL="https://raw.githubusercontent.com/xDereVpn/error404/main/udpzivpn/config.json"
-
-# Path Bin amd64
-BIN_PATH="/usr/local/bin/zivpn"
-
-# Directory Config udp zivpn
-CFG_DIR="/etc/zivpn"
-CFG_PATH="${CFG_DIR}/config.json"
-KEY_PATH="${CFG_DIR}/zivpn.key"
-CRT_PATH="${CFG_DIR}/zivpn.crt"
-
-# Port udp # Ufw / Dnat
-UDP_LISTEN_PORT="5667"
-DNAT_FROM_MIN="6000"
-DNAT_FROM_MAX="19999"
-
-# UPDATE SERVR DAN BUAT CERT SSL HUSUS UDP ZIVPN
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Update zivpn server and Packet ${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-export DEBIAN_FRONTEND=noninteractive
-apt-get update -y
-apt-get upgrade -y
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Stop Service zivpn server${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-systemctl stop zivpn.service 2>/dev/null || true
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Save Binary zivpn server Configs${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-mkdir -p "${CFG_DIR}"
-wget -qO "${BIN_PATH}" "${BIN_URL}"
-chmod +x "${BIN_PATH}"
-wget -qO "${CFG_PATH}" "${CFG_URL}"
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Generate Certs Files Zivpn ${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-if [[ ! -f "${KEY_PATH}" || ! -f "${CRT_PATH}" ]]; then
-openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
--subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=zivpn" \
--keyout "${KEY_PATH}" -out "${CRT_PATH}"
-fi
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Generate Sysctl  ${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-cat >/etc/sysctl.d/99-zivpn-udp.conf <<EOF
-net.core.rmem_max=16777216
-net.core.wmem_max=16777216
-EOF
-sysctl --system >/dev/null
-echo "[6/9] Force password config to [\"zi\"]"
-sed -i -E 's/"config"[[:space:]]*:[[:space:]]*\[[^]]*\]/"config": ["zi"]/g' "${CFG_PATH}"
-
-# BUAT SERVICE UDP ZIVPN
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Generate Service zivpn is Running ${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-cat >/etc/systemd/system/zivpn.service <<EOF
-[Unit]
-Description=zivpn VPN Server
-Wants=network-online.target
-After=network-online.target
-StartLimitIntervalSec=0
-[Service]
-Type=simple
-User=root
-WorkingDirectory=${CFG_DIR}
-ExecStartPre=/bin/sh -c 'test -s "${CFG_PATH}" && test -s "${KEY_PATH}" && test -s "${CRT_PATH}"'
-ExecStart=${BIN_PATH} server -c ${CFG_PATH}
-Restart=on-failure
-RestartSec=3
-Environment=ZIVPN_LOG_LEVEL=info
-CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
-AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
-NoNewPrivileges=true
-[Install]
-WantedBy=multi-user.target
-EOF
-systemctl daemon-reload
-systemctl enable zivpn.service >/dev/null
-
-# AKTIFKAN IPTABLES DAN NAT
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Install zivpn NAT, IPTABLES ${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-apt-get install -y iptables-persistent >/dev/null
-DEF_IF="$(ip -4 route ls | awk '/default/ {print $5; exit}')"
-if [[ -z "${DEF_IF}" ]]; then
-echo "❌ Gagal mendeteksi interface default. Cek: ip -4 route"
-exit 1
-fi
-if ! iptables -t nat -C PREROUTING -i "${DEF_IF}" -p udp --dport "${DNAT_FROM_MIN}:${DNAT_FROM_MAX}" -j DNAT --to-destination ":${UDP_LISTEN_PORT}" 2>/dev/null; then
-iptables -t nat -A PREROUTING -i "${DEF_IF}" -p udp --dport "${DNAT_FROM_MIN}:${DNAT_FROM_MAX}" -j DNAT --to-destination ":${UDP_LISTEN_PORT}"
-fi
-iptables-save > /etc/iptables/rules.v4
-
-# AKTIFKAN UFW / FIREWAL 
-clear
-echo -e "${CYAN} ============================ ${NC}"
-echo -e "${YELLOW} Permission UFW to zivpn server  ${NC}"
-echo -e "${CYAN} ============================ ${NC}"
-if command -v ufw >/dev/null 2>&1; then
-ufw allow "${DNAT_FROM_MIN}:${DNAT_FROM_MAX}/udp" >/dev/null || true
-ufw allow "${UDP_LISTEN_PORT}/udp" >/dev/null || true
-fi
-systemctl restart zivpn.service
-echo ""
-echo "✅ ZIVPN UDP Installed & reboot-safe"
-echo "- Service: systemctl status zivpn --no-pager"
-echo "- Interface detected: ${DEF_IF}"
-echo "- DNAT UDP ${DNAT_FROM_MIN}-${DNAT_FROM_MAX} -> :${UDP_LISTEN_PORT}"
-
-}
-
-MENU_SETUPVv() {
-    clear
-    print_install "Memasang Menu Packet"
-
-    apt update -y
-    apt install -y unzip
-
-    wget https://raw.githubusercontent.com/xDereVpn/error404/main/feature/LUNAVPN
-    unzip LUNAVPN
-    chmod +x menu/*
-    mv menu/* /usr/local/sbin
-    dos2unix /usr/local/sbin/welcome
-    
-    rm -rf menu
-    rm -rf LUNAVPN
-    print_success "Menu berhasil dipasang"
-}
 function MENU_SETUP() {
 clear
 
@@ -1412,6 +1244,121 @@ fi
 mesg n || true
 menu
 EOF
+}
+
+UDP_CUSTOM() {
+set -e
+cd
+mkdir -p /usr/bin/udp
+
+echo "[+] Set timezone Asia/Jakarta"
+ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+# ===============================
+# DOWNLOAD UDP CUSTOM
+# ===============================
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m DOWNLOAD BINARY UDP CUSTOM \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+wget -q --show-progress --load-cookies /tmp/cookies.txt \
+"https://docs.google.com/uc?export=download&confirm=$(wget --quiet \
+--save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
+'https://docs.google.com/uc?export=download&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV' \
+-O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV" \
+-O /usr/bin/udp-custom && rm -f /tmp/cookies.txt
+chmod +x /usr/bin/udp-custom
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m DOWNLOAD CONFIG.JSON UDP CUSTOM\033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+wget -q --show-progress --load-cookies /tmp/cookies.txt \
+"https://docs.google.com/uc?export=download&confirm=$(wget --quiet \
+--save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
+'https://docs.google.com/uc?export=download&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf' \
+-O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf" \
+-O /usr/bin/udp/config.json && rm -f /tmp/cookies.txt
+chmod 644 /usr/bin/udp/config.json
+
+# ===============================
+# UDP KERNEL TUNING
+# ===============================
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m APPLY UDP SYSCTL TUNING \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+cat >/etc/sysctl.d/99-udp-custom.conf <<EOF
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+EOF
+sysctl --system >/dev/null
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m PORT AND NAT SETUP \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+UDP_PORT="7300"
+DNAT_MIN="6000"
+DNAT_MAX="19999"
+
+DEF_IF=$(ip -4 route | awk '/default/ {print $5; exit}')
+if [ -z "$DEF_IF" ]; then
+  echo "❌ Tidak bisa deteksi interface default"
+  exit 1
+fi
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m SETUP DNAT UDP CUSTOM \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+echo "[+] Setup DNAT UDP ${DNAT_MIN}-${DNAT_MAX} -> ${UDP_PORT}"
+iptables -t nat -C PREROUTING -i "$DEF_IF" -p udp --dport ${DNAT_MIN}:${DNAT_MAX} \
+-j DNAT --to-destination :${UDP_PORT} 2>/dev/null || \
+iptables -t nat -A PREROUTING -i "$DEF_IF" -p udp --dport ${DNAT_MIN}:${DNAT_MAX} \
+-j DNAT --to-destination :${UDP_PORT}
+
+iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+
+# ===============================
+# FIREWALL
+# ===============================
+if command -v ufw >/dev/null 2>&1; then
+  echo "[+] Allow UDP ports in UFW"
+  ufw allow ${DNAT_MIN}:${DNAT_MAX}/usr/bin/udp >/dev/null || true
+  ufw allow ${UDP_PORT}/usr/bin/udp >/dev/null || true
+fi
+
+# ===============================
+# SYSTEMD SERVICE
+# ===============================
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m BUAT SERVICE UDP CUSTOM \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+cat >/etc/systemd/system/udp-custom.service <<EOF
+[Unit]
+Description=UDP Custom Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=root
+Type=simple
+WorkingDirectory=/usr/bin/udp
+ExecStart=/usr/bin/udp-custom server
+Restart=always
+RestartSec=3
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable udp-custom >/dev/null
+systemctl restart udp-custom
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m UDP CUSTOM SUDAH AKTIF \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+echo "- Port UDP Listen : ${UDP_PORT}"
+echo "- DNAT Range    : ${DNAT_MIN}-${DNAT_MAX}"
+echo "- Interface        : ${DEF_IF}"
 }
 
 # Tambah Swap 1GB
@@ -1655,12 +1602,13 @@ function RUN() {
     WEBSOCKET_SETUP        # Custom script tambahan
     RESTART_SERVICE        # Restart semua layanan
     MENU_SETUP             # Pasang menu CLI
-    BASHRC_PROFILE         # Update environment profile
+    BASHRC_PROFILE         # Update environment profile    
     ENABLED_SERVICE        # Aktifkan semua service
     BOT_SHELL
     REBUILD_INSTALL
     SET_DETEK_SSH
     ADD_CEEF
+    UDP_CUSTOM   
 }
 
 # ==========================================
@@ -1681,11 +1629,14 @@ rm -rf /root/*.sh
 rm -rf /root/LICENSE
 rm -rf /root/README.md
 rm -rf /root/domain
-rm -rf /root/drop*
+rm -rf /root/dropbear*
 rm -rf /root/udp
-# ==========================================
-# Pesan Sukses
-# ==========================================
+
+clear
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[92;1m FIX haproxy.cfg \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+
 cat > /etc/haproxy/haproxy.cfg <<-EOF
 # Author : Dian Permana ( Lunatic Tunneling )
 # Add : Bandung Barat , saguling , Indonesia
@@ -1813,7 +1764,172 @@ systemctl daemon-reload
 systemctl enable haproxy
 systemctl restart haproxy
 
+function UDP_ZIVPN() {
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m DOWNLOAD UDP ZIVPN \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+sleep 3
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} buat apikey 6 karakter ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+    local api_key
+    api_key=$(LC_ALL=C tr -dc 'a-zA-Z0-9' < /dev/urandom | head -c 6)
+
+    # Simpan API key ke file
+    local key_file="/etc/zivpn/api_auth.key"
+    echo "$api_key" > "$key_file"
+    chmod 600 "$key_file"  # Batasi akses file
+       
+set -euo pipefail
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+LIGHT_BLUE='\033[1;36m'  # biru muda terang
+BOLD_WHITE='\033[1;37m'
+CYAN='\033[96;1m'
+GREEN='\033[0;32m'
+LIGHT_GREEN='\033[1;32m'
+NC='\033[0m' # No Color
+
+# LICENSE IP
+LICENSE_URL="https://raw.githubusercontent.com/xDereVpn/permission/main/regist"
+LICENSE_INFO_FILE="/etc/zivpn/.license_info"
+
+# Link Downlod Bin amd64
+BIN_URL="https://github.com/arivpnstores/udp-zivpn/releases/download/zahidbd2/udp-zivpn-linux-amd64"
+
+# Link Download config.json
+CFG_URL="https://raw.githubusercontent.com/xDereVpn/error404/main/udpzivpn/config.json"
+
+# Path Bin amd64
+BIN_PATH="/usr/local/bin/"
+
+# Directory Config udp zivpn
+CFG_DIR="/etc/zivpn"
+CFG_PATH="${CFG_DIR}/config.json"
+KEY_PATH="${CFG_DIR}/zivpn.key"
+CRT_PATH="${CFG_DIR}/zivpn.crt"
+
+# Port udp # Ufw / Dnat
+UDP_LISTEN_PORT="5667"
+DNAT_FROM_MIN="6000"
+DNAT_FROM_MAX="19999"
+
+# UPDATE SERVR DAN BUAT CERT SSL HUSUS UDP ZIVPN
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Update zivpn server and Packet ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get upgrade -y
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Stop Service zivpn server${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+systemctl stop zivpn.service 2>/dev/null || true
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Save Binary zivpn server Configs${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+mkdir -p "${CFG_DIR}"
+wget -qO "${BIN_PATH}" "${BIN_URL}"
+chmod +x "${BIN_PATH}"
+wget -qO "${CFG_PATH}" "${CFG_URL}"
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Generate Certs Files Zivpn ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+if [[ ! -f "${KEY_PATH}" || ! -f "${CRT_PATH}" ]]; then
+openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 \
+-subj "/C=US/ST=California/L=Los Angeles/O=Example Corp/OU=IT Department/CN=zivpn" \
+-keyout "${KEY_PATH}" -out "${CRT_PATH}"
+fi
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Generate Sysctl  ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+cat >/etc/sysctl.d/99-zivpn-udp.conf <<EOF
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+EOF
+sysctl --system >/dev/null
+echo "[6/9] Force password config to [\"zi\"]"
+sed -i -E 's/"config"[[:space:]]*:[[:space:]]*\[[^]]*\]/"config": ["zi"]/g' "${CFG_PATH}"
+
+# BUAT SERVICE UDP ZIVPN
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Generate Service zivpn is Running ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+cat >/etc/systemd/system/zivpn.service <<EOF
+[Unit]
+Description=zivpn VPN Server
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=root
+WorkingDirectory=${CFG_DIR}
+ExecStartPre=/bin/sh -c 'test -s "${CFG_PATH}" && test -s "${KEY_PATH}" && test -s "${CRT_PATH}"'
+ExecStart=${BIN_PATH} server -c ${CFG_PATH}
+Restart=on-failure
+RestartSec=3
+Environment=ZIVPN_LOG_LEVEL=info
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE CAP_NET_RAW
+NoNewPrivileges=true
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable zivpn.service >/dev/null
+
+# AKTIFKAN IPTABLES DAN NAT
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Install zivpn NAT, IPTABLES ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+apt-get install -y iptables-persistent >/dev/null
+DEF_IF="$(ip -4 route ls | awk '/default/ {print $5; exit}')"
+if [[ -z "${DEF_IF}" ]]; then
+echo "❌ Gagal mendeteksi interface default. Cek: ip -4 route"
+exit 1
+fi
+if ! iptables -t nat -C PREROUTING -i "${DEF_IF}" -p udp --dport "${DNAT_FROM_MIN}:${DNAT_FROM_MAX}" -j DNAT --to-destination ":${UDP_LISTEN_PORT}" 2>/dev/null; then
+iptables -t nat -A PREROUTING -i "${DEF_IF}" -p udp --dport "${DNAT_FROM_MIN}:${DNAT_FROM_MAX}" -j DNAT --to-destination ":${UDP_LISTEN_PORT}"
+fi
+iptables-save > /etc/iptables/rules.v4
+
+# AKTIFKAN UFW / FIREWAL 
+clear
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} Permission UFW to zivpn server  ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+if command -v ufw >/dev/null 2>&1; then
+ufw allow "${DNAT_FROM_MIN}:${DNAT_FROM_MAX}/udp" >/dev/null || true
+ufw allow "${UDP_LISTEN_PORT}/udp" >/dev/null || true
+fi
+systemctl restart zivpn.service
+echo ""
+echo "✅ ZIVPN UDP Installed & reboot-safe"
+echo "- Service: systemctl status zivpn --no-pager"
+echo "- Interface detected: ${DEF_IF}"
+echo "- DNAT UDP ${DNAT_FROM_MIN}-${DNAT_FROM_MAX} -> :${UDP_LISTEN_PORT}"
+clear
+
+echo -e "${CYAN} ============================ ${NC}"
+echo -e "${YELLOW} DOWNLOAD zivpn-manger  ${NC}"
+echo -e "${CYAN} ============================ ${NC}"
+mkdir -p /usr/local/bin
+wget -q https://raw.githubusercontent.com/xDereVpn/error404/main/udpzivpn/zivpn-manager -O /usr/local/bin/zivpn-manager
+chmod +x /usr/local/bin/zivpn-manager
+/usr/local/bin/zivpn-manager
+
+}
 UDP_ZIVPN
+
 clear
 echo -e "${YELLOW} INSTALL SELESAI ${NC}"
 echo -e " tunggu 3 detik menuju reboot... "
