@@ -1,12 +1,11 @@
 #!/bin/bash
-# base Scripts : LT x GPT
-# Create anyewhere : 2015
-# Bringas Tunnel | Bringas Family
-# Lunatic Tunneling ( LT )
-# Autheeer :  Lunatic Tunneling
-# Bandung Barat | jawa Barat
-# Who i am : from Indonesia
+# base Scripts : # Bringas Tunnel | Bringas Family @2016
+# Create anyewhere : 2016 november 14
+# Recoder : Lunatic Tunneling ( LT )
+# Autheeer :  Bringas Tunnel
+# Bandung Barat | jawa Barat | desa Jati | Indonesia
 # Recode ? Jangan Hilangkan Watermark tod bodoh
+# awas ada trap , gua masih baik ngasi tau 
 export TERM=xterm
 export DEBIAN_FRONTEND=noninteractive
 dpkg-reconfigure debconf -f noninteractive 2>/dev/null
@@ -308,7 +307,7 @@ TOOLS_SETUP() {
     # Bersih-bersih dan setting iptables-persistent
     sudo apt-get clean all
     sudo apt-get autoremove -y
-    sudo apt-get remove --purge -y exim4 ufw firewalld
+    sudo apt-get remove --purge -y exim4 ufw firewall
     sudo apt-get install -y debconf-utils
 
     echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
@@ -395,7 +394,7 @@ IPVPS=$(curl -s ipv4.icanhazip.com)
 DOMAIN_MENU() {
 clear
 echo "=============================="
-echo -e "\e[93;1m    DIWAN VPN TUNNELING  \e[0m "
+echo -e "\e[93;1m   XDERE VPN   \e[0m "
 echo "=============================="
 echo "         SETUP DOMAIN "
 echo "=============================="
@@ -1765,10 +1764,11 @@ systemctl enable haproxy
 systemctl restart haproxy
 
 function UDP_ZIVPN() {
+
 echo -e "\033[31;1m ============================ \033[0m"
 echo -e "\033[32;1m DOWNLOAD UDP ZIVPN \033[0m"
 echo -e "\033[31;1m ============================ \033[0m"
-sleep 3
+apt install ufw -y
 clear
 echo -e "${CYAN} ============================ ${NC}"
 echo -e "${YELLOW} buat apikey 6 karakter ${NC}"
@@ -1925,7 +1925,7 @@ echo -e "${CYAN} ============================ ${NC}"
 mkdir -p /usr/local/bin
 wget -q https://raw.githubusercontent.com/xDereVpn/error404/main/udpzivpn/zivpn-manager -O /usr/local/bin/zivpn-manager
 chmod +x /usr/local/bin/zivpn-manager
-/usr/local/bin/zivpn-manager
+bash /usr/local/bin/zivpn-manager
 
 }
 UDP_ZIVPN
