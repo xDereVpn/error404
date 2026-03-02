@@ -72,7 +72,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/python3 /etc/lunatic/autodelete.py
+ExecStart=/usr/bin/python3 /usr/bin/autodelete.py
 EOF
 
 # TIMER AUTODELETE (INI YANG BENAR)
