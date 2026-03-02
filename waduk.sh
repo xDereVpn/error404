@@ -41,7 +41,7 @@ IPVPS=$(curl -sS ipv4.icanhazip.com)
 export IP=$( curl -sS icanhazip.com )
 
 # GIT REPO
-LUNAREP="https://raw.githubusercontent.com/xDereVpn/error404/main/"
+LUNAREP="https://raw.githubusercontent.com/XDereVpn/error404/main/"
 
 function ADD_CEEF() {
 EMAILCF="newvpnlunatix293@gmail.com"
@@ -394,7 +394,7 @@ IPVPS=$(curl -s ipv4.icanhazip.com)
 DOMAIN_MENU() {
 clear
 echo "=============================="
-echo -e "\e[93;1m   XDERE VPN   \e[0m "
+echo -e "\e[93;1m    DIWAN VPN TUNNELING  \e[0m "
 echo "=============================="
 echo "         SETUP DOMAIN "
 echo "=============================="
@@ -591,8 +591,11 @@ XRAY_SETUP() {
     local domainSock_dir="/run/xray"
     [[ ! -d $domainSock_dir ]] && mkdir -p "$domainSock_dir"
     chown www-data:www-data "$domainSock_dir"
-    # Install Xray Core
-    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 24.10.31
+    # Install Xray Core versi v24
+    # bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data --version 24.10.31
+    
+    # XRAY TERBARU VERSI V26
+    bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install -u www-data
     # Konfigurasi file dan service custom
     wget -q -O /etc/xray/config.json "${LUNAREP}configure/config.json"
     wget -q -O /etc/systemd/system/runn.service "${LUNAREP}configure/runn.service"
@@ -659,7 +662,7 @@ PW_DEFAULT() {
     print_install "Mengatur Password Policy dan Konfigurasi SSH"
 
     # Download file konfigurasi password PAM
-    local password_url="https://raw.githubusercontent.com/xDereVpn/error404/main/configure/password"
+    local password_url="https://raw.githubusercontent.com/XDereVpn/error404/main/configure/password"
     wget -q -O /etc/pam.d/common-password "$password_url"
     chmod 644 /etc/pam.d/common-password
 
@@ -735,7 +738,7 @@ LIMIT_HANDLER() {
     print_install "Memasang Service Limit Quota"
 
     # Download dan jalankan install.sh untuk setup awal
-    wget https://raw.githubusercontent.com/xDereVpn/error404/main/LimitHandler/install.sh && chmod +x install.sh && ./install.sh
+    wget https://raw.githubusercontent.com/XDereVpn/error404/main/LimitHandler/install.sh && chmod +x install.sh && ./install.sh
 
     # Download file limit-ip ke /usr/bin/
     cd
@@ -998,6 +1001,7 @@ SWAPRAM_SETUP(){
     chmod 600 /swapfile
     swapon /swapfile >/dev/null 2>&1
 
+wget https://raw.githubusercontent.com/XDereVpn/error404/main/configure/sysctl.conf && mv sysctl.conf /etc/
 # swap 1 Gb untuk ram 1
     fallocate -l 1G /swapfile2
     chmod 600 /swapfile2
@@ -1207,7 +1211,7 @@ apt install -y unzip dos2unix openssl gzip -y
 clear
 echo -e "\033[32;1m Download feature.... \033[0m"
 
-wget https://raw.githubusercontent.com/xDereVpn/error404/main/feature/LUNAVPN
+wget https://raw.githubusercontent.com/XDereVpn/error404/main/feature/LUNAVPN
 unzip LUNAVPN >/dev/null 2>&1
 
 chmod +x menu/*
@@ -1241,123 +1245,8 @@ if [ -f ~/.bashrc ]; then
 fi
 fi
 mesg n || true
-menu
+welcome
 EOF
-}
-
-UDP_CUSTOM() {
-set -e
-cd
-mkdir -p /usr/bin/udp
-
-echo "[+] Set timezone Asia/Jakarta"
-ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
-
-# ===============================
-# DOWNLOAD UDP CUSTOM
-# ===============================
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m DOWNLOAD BINARY UDP CUSTOM \033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-wget -q --show-progress --load-cookies /tmp/cookies.txt \
-"https://docs.google.com/uc?export=download&confirm=$(wget --quiet \
---save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
-'https://docs.google.com/uc?export=download&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV' \
--O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV" \
--O /usr/bin/udp-custom && rm -f /tmp/cookies.txt
-chmod +x /usr/bin/udp-custom
-
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m DOWNLOAD CONFIG.JSON UDP CUSTOM\033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-wget -q --show-progress --load-cookies /tmp/cookies.txt \
-"https://docs.google.com/uc?export=download&confirm=$(wget --quiet \
---save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
-'https://docs.google.com/uc?export=download&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf' \
--O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf" \
--O /usr/bin/udp/config.json && rm -f /tmp/cookies.txt
-chmod 644 /usr/bin/udp/config.json
-
-# ===============================
-# UDP KERNEL TUNING
-# ===============================
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m APPLY UDP SYSCTL TUNING \033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-cat >/etc/sysctl.d/99-udp-custom.conf <<EOF
-net.core.rmem_max=16777216
-net.core.wmem_max=16777216
-EOF
-sysctl --system >/dev/null
-
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m PORT AND NAT SETUP \033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-UDP_PORT="7300"
-DNAT_MIN="6000"
-DNAT_MAX="19999"
-
-DEF_IF=$(ip -4 route | awk '/default/ {print $5; exit}')
-if [ -z "$DEF_IF" ]; then
-  echo "❌ Tidak bisa deteksi interface default"
-  exit 1
-fi
-
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m SETUP DNAT UDP CUSTOM \033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-echo "[+] Setup DNAT UDP ${DNAT_MIN}-${DNAT_MAX} -> ${UDP_PORT}"
-iptables -t nat -C PREROUTING -i "$DEF_IF" -p udp --dport ${DNAT_MIN}:${DNAT_MAX} \
--j DNAT --to-destination :${UDP_PORT} 2>/dev/null || \
-iptables -t nat -A PREROUTING -i "$DEF_IF" -p udp --dport ${DNAT_MIN}:${DNAT_MAX} \
--j DNAT --to-destination :${UDP_PORT}
-
-iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
-
-# ===============================
-# FIREWALL
-# ===============================
-if command -v ufw >/dev/null 2>&1; then
-  echo "[+] Allow UDP ports in UFW"
-  ufw allow ${DNAT_MIN}:${DNAT_MAX}/usr/bin/udp >/dev/null || true
-  ufw allow ${UDP_PORT}/usr/bin/udp >/dev/null || true
-fi
-
-# ===============================
-# SYSTEMD SERVICE
-# ===============================
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m BUAT SERVICE UDP CUSTOM \033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-cat >/etc/systemd/system/udp-custom.service <<EOF
-[Unit]
-Description=UDP Custom Server
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-User=root
-Type=simple
-WorkingDirectory=/usr/bin/udp
-ExecStart=/usr/bin/udp-custom server
-Restart=always
-RestartSec=3
-LimitNOFILE=1048576
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-systemctl daemon-reload
-systemctl enable udp-custom >/dev/null
-systemctl restart udp-custom
-
-echo -e "\033[31;1m ============================ \033[0m"
-echo -e "\033[32;1m UDP CUSTOM SUDAH AKTIF \033[0m"
-echo -e "\033[31;1m ============================ \033[0m"
-echo "- Port UDP Listen : ${UDP_PORT}"
-echo "- DNAT Range    : ${DNAT_MIN}-${DNAT_MAX}"
-echo "- Interface        : ${DEF_IF}"
 }
 
 # Tambah Swap 1GB
@@ -1490,7 +1379,7 @@ ENABLED_SERVICE() {
 }
 BOT_SHELL() {
    echo -e "\e[92;1m install shellbot \e[0m"
-   wget https://raw.githubusercontent.com/xDereVpn/error404/main/LTbotVPN/SHELLBOT
+   wget https://raw.githubusercontent.com/XDereVpn/error404/main/LTbotVPN/SHELLBOT
     unzip SHELLBOT
     mv LTBOTVPN /usr/bin
     chmod +x /usr/bin/LTBOTVPN/*
@@ -1606,8 +1495,7 @@ function RUN() {
     BOT_SHELL
     REBUILD_INSTALL
     SET_DETEK_SSH
-    ADD_CEEF
-    UDP_CUSTOM   
+    ADD_CEEF   
 }
 
 # ==========================================
@@ -1763,6 +1651,123 @@ systemctl daemon-reload
 systemctl enable haproxy
 systemctl restart haproxy
 
+
+function UDP_CUSTOM() {
+set -e
+cd
+mkdir -p /usr/bin/udp
+
+echo "[+] Set timezone Asia/Jakarta"
+ln -fs /usr/share/zoneinfo/Asia/Jakarta /etc/localtime
+
+# ===============================
+# DOWNLOAD UDP CUSTOM
+# ===============================
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m DOWNLOAD BINARY UDP CUSTOM \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+wget -q --show-progress --load-cookies /tmp/cookies.txt \
+"https://docs.google.com/uc?export=download&confirm=$(wget --quiet \
+--save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
+'https://docs.google.com/uc?export=download&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV' \
+-O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')&id=1ixz82G_ruRBnEEp4vLPNF2KZ1k8UfrkV" \
+-O /usr/bin/udp-custom && rm -f /tmp/cookies.txt
+chmod +x /usr/bin/udp-custom
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m DOWNLOAD CONFIG.JSON UDP CUSTOM\033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+wget -q --show-progress --load-cookies /tmp/cookies.txt \
+"https://docs.google.com/uc?export=download&confirm=$(wget --quiet \
+--save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate \
+'https://docs.google.com/uc?export=download&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf' \
+-O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1/p')&id=1klXTiKGUd2Cs5cBnH3eK2Q1w50Yx3jbf" \
+-O /usr/bin/udp/config.json && rm -f /tmp/cookies.txt
+chmod 644 /usr/bin/udp/config.json
+
+# ===============================
+# UDP KERNEL TUNING
+# ===============================
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m APPLY UDP SYSCTL TUNING \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+cat >/etc/sysctl.d/99-udp-custom.conf <<EOF
+net.core.rmem_max=16777216
+net.core.wmem_max=16777216
+EOF
+sysctl --system >/dev/null
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m PORT AND NAT SETUP \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+UDP_PORT="7300"
+DNAT_MIN="6000"
+DNAT_MAX="19999"
+
+DEF_IF=$(ip -4 route | awk '/default/ {print $5; exit}')
+if [ -z "$DEF_IF" ]; then
+  echo "❌ Tidak bisa deteksi interface default"
+  exit 1
+fi
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m SETUP DNAT UDP CUSTOM \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+echo "[+] Setup DNAT UDP ${DNAT_MIN}-${DNAT_MAX} -> ${UDP_PORT}"
+iptables -t nat -C PREROUTING -i "$DEF_IF" -p udp --dport ${DNAT_MIN}:${DNAT_MAX} \
+-j DNAT --to-destination :${UDP_PORT} 2>/dev/null || \
+iptables -t nat -A PREROUTING -i "$DEF_IF" -p udp --dport ${DNAT_MIN}:${DNAT_MAX} \
+-j DNAT --to-destination :${UDP_PORT}
+
+iptables-save > /etc/iptables/rules.v4 2>/dev/null || true
+
+# ===============================
+# FIREWALL
+# ===============================
+if command -v ufw >/dev/null 2>&1; then
+  echo "[+] Allow UDP ports in UFW"
+  ufw allow ${DNAT_MIN}:${DNAT_MAX}/usr/bin/udp >/dev/null || true
+  ufw allow ${UDP_PORT}/usr/bin/udp >/dev/null || true
+fi
+
+# ===============================
+# SYSTEMD SERVICE
+# ===============================
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m BUAT SERVICE UDP CUSTOM \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+cat >/etc/systemd/system/udp-custom.service <<EOF
+[Unit]
+Description=UDP Custom Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=root
+Type=simple
+WorkingDirectory=/usr/bin/udp
+ExecStart=/usr/bin/udp-custom server
+Restart=always
+RestartSec=3
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable udp-custom >/dev/null
+systemctl restart udp-custom
+
+echo -e "\033[31;1m ============================ \033[0m"
+echo -e "\033[32;1m UDP CUSTOM SUDAH AKTIF \033[0m"
+echo -e "\033[31;1m ============================ \033[0m"
+echo "- Port UDP Listen : ${UDP_PORT}"
+echo "- DNAT Range    : ${DNAT_MIN}-${DNAT_MAX}"
+echo "- Interface        : ${DEF_IF}"
+}
+
+
 function UDP_ZIVPN() {
 
 echo -e "\033[31;1m ============================ \033[0m"
@@ -1792,14 +1797,14 @@ LIGHT_GREEN='\033[1;32m'
 NC='\033[0m' # No Color
 
 # LICENSE IP
-LICENSE_URL="https://raw.githubusercontent.com/xDereVpn/permission/main/regist"
+LICENSE_URL="https://raw.githubusercontent.com/XDereVpn/permission/main/regist"
 LICENSE_INFO_FILE="/etc/zivpn/.license_info"
 
 # Link Downlod Bin amd64
 BIN_URL="https://github.com/arivpnstores/udp-zivpn/releases/download/zahidbd2/udp-zivpn-linux-amd64"
 
 # Link Download config.json
-CFG_URL="https://raw.githubusercontent.com/xDereVpn/error404/main/udpzivpn/config.json"
+CFG_URL="https://raw.githubusercontent.com/XDereVpn/error404/main/udpzivpn/config.json"
 
 # Path Bin amd64
 BIN_PATH="/usr/local/bin/"
@@ -1834,7 +1839,7 @@ echo -e "${YELLOW} Save Binary zivpn server Configs${NC}"
 echo -e "${CYAN} ============================ ${NC}"
 mkdir -p "${CFG_DIR}"
 wget -qO "${BIN_PATH}" "${BIN_URL}"
-chmod +x "${BIN_PATH}"
+chmod +x "${BIN_PATH}zivpn"
 wget -qO "${CFG_PATH}" "${CFG_URL}"
 clear
 echo -e "${CYAN} ============================ ${NC}"
@@ -1923,13 +1928,12 @@ echo -e "${CYAN} ============================ ${NC}"
 echo -e "${YELLOW} DOWNLOAD zivpn-manger  ${NC}"
 echo -e "${CYAN} ============================ ${NC}"
 mkdir -p /usr/local/bin
-wget -q https://raw.githubusercontent.com/xDereVpn/error404/main/udpzivpn/zivpn-manager -O /usr/local/bin/zivpn-manager
+wget -q https://raw.githubusercontent.com/XDereVpn/error404/main/udpzivpn/zivpn-manager -O /usr/local/bin/zivpn-manager
 chmod +x /usr/local/bin/zivpn-manager
 bash /usr/local/bin/zivpn-manager
 
 }
-UDP_ZIVPN
-
+UDP_ZIVPN && UDP_CUSTOM
 clear
 echo -e "${YELLOW} INSTALL SELESAI ${NC}"
 echo -e " tunggu 3 detik menuju reboot... "
