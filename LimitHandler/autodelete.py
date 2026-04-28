@@ -4,11 +4,20 @@ import os
 import json
 import subprocess
 from datetime import datetime
+import pytz
+import requests
 
+# ====== KONFIGURASI ======
 XRAY_CONFIG = "/etc/xray/config.json"
-TODAY = datetime.now().date()
+WIB = pytz.timezone('Asia/Jakarta')
+TODAY = datetime.now(WIB).date()
+JAM_SEKARANG = datetime.now(WIB).strftime("%d-%m-%Y %H:%M WIB")
 
 SERVICES = ["xray", "nginx"]
+
+TELEGRAM_TOKEN = "GANTI_TOKEN_BOT_KAMU"  # Ganti dari @BotFather
+TELEGRAM_CHAT_ID = "GANTI_CHAT_ID_KAMU"  # Ganti dari @userinfobot
+# =========================
 
 ACCOUNTS = {
     "vmess": {
@@ -35,6 +44,21 @@ ACCOUNTS = {
 }
 
 SSH_DB = "/etc/lunatic/ssh/.ssh.db"
+DELETED_USERS = {"vmess": [], "vless": [], "trojan": [], "ssh": []}
+
+def kirim_telegram(pesan):
+    if TELEGRAM_TOKEN == "GANTI_TOKEN_BOT_KAMU":
+        return
+    url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    data = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": pesan,
+        "parse_mode": "HTML"
+    }
+    try:
+        requests.post(url, data=data, timeout=10)
+    except:
+        pass
 
 def restart_services():
     for svc in SERVICES:
@@ -57,75 +81,3 @@ def delete_xray_user(username, tag):
         if tag in line and username in line:
             skip = True
             continue
-        if skip and line.strip().startswith("},"):
-            skip = False
-            continue
-        if not skip:
-            new.append(line)
-
-    with open(XRAY_CONFIG, "w") as f:
-        f.writelines(new)
-
-def process_xray_accounts(name, cfg):
-    if not os.path.exists(cfg["db"]):
-        return
-
-    new_db = []
-
-    with open(cfg["db"]) as f:
-        for line in f:
-            if not line.startswith("###"):
-                continue
-
-            user, exp = line.strip().split()[1:3]
-            exp_date = datetime.strptime(exp, "%Y-%m-%d").date()
-
-            if exp_date <= TODAY:
-                delete_xray_user(user, cfg["tag"])
-                remove_file(f"{cfg['ip']}/{user}")
-                remove_file(f"{cfg['usage']}/{user}")
-                remove_file(f"{cfg['detail']}/{user}.txt")
-            else:
-                new_db.append(line)
-
-    with open(cfg["db"], "w") as f:
-        f.writelines(new_db)
-
-def process_ssh():
-    if not os.path.exists(SSH_DB):
-        return
-
-    new_db = []
-
-    with open(SSH_DB) as f:
-        for line in f:
-            if not line.startswith("#ssh#"):
-                new_db.append(line)
-                continue
-
-            parts = line.strip().split()
-            user = parts[1]
-            exp_str = " ".join(parts[3:6])
-            exp_date = datetime.strptime(exp_str, "%d %b, %Y").date()
-
-            if exp_date <= TODAY:
-                subprocess.run(["userdel", "-f", user],
-                               stdout=subprocess.DEVNULL,
-                               stderr=subprocess.DEVNULL)
-                remove_file(f"/etc/lunatic/ssh/ip/{user}")
-                remove_file(f"/etc/lunatic/ssh/detail/{user}.txt")
-            else:
-                new_db.append(line)
-
-    with open(SSH_DB, "w") as f:
-        f.writelines(new_db)
-
-def main():
-    for name, cfg in ACCOUNTS.items():
-        process_xray_accounts(name, cfg)
-
-    process_ssh()
-    restart_services()
-
-if __name__ == "__main__":
-    main()
